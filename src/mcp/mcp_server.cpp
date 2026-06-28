@@ -48,6 +48,11 @@ static std::string S(const ByteString &bs)
     return {bs.c_str(), bs.size()};
 }
 
+static std::string S(const String &s)
+{
+    return {s.c_str(), s.size()};
+}
+
 static ByteString BS(const std::string &s)
 {
     return {s.c_str(), s.size()};
