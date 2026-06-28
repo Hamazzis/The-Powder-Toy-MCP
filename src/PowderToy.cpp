@@ -1,6 +1,7 @@
 #include "PowderToySDL.h"
 #include "Format.h"
 #include "X86KillDenormals.h"
+#include "mcp/mcp_server.h"
 #include "prefs/GlobalPrefs.h"
 #include "client/Client.h"
 #include "client/GameSave.h"
@@ -502,6 +503,11 @@ int Main(int argc, char *argv[])
 	engine.ShowWindow(gameController->GetView());
 	gameController->InitCommandInterface();
 
+	// Start MCP server for AI control
+	auto *model = gameController->GetModel();
+	mcp::SetGamePointers(gameController, model, model->GetSimulation(), engine.g);
+	mcp::Start(8123);
+
 	auto openArg = arguments["open"];
 	if (openArg.has_value())
 	{
@@ -587,6 +593,8 @@ int Main(int argc, char *argv[])
 	}
 
 	MainLoop();
+
+	mcp::Stop();
 
 	Platform::Exit(0);
 	return 0;

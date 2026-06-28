@@ -128,6 +128,7 @@ powder_files = files(
 	'SDLCompat.cpp',
 	'PowderToySDL.cpp',
 	'PowderToy.cpp',
+	'mcp/mcp_server.cpp',
 	'lua/CommandInterface.cpp',
 	'lua/TPTSTypes.cpp',
 )

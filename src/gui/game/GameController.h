@@ -97,6 +97,9 @@ public:
 
 	void Install();
 
+	// Exposed for MCP server
+	GameModel *GetModel() { return gameModel; }
+
 	bool HistoryRestore();
 	void HistorySnapshot();
 	bool HistoryForward();
