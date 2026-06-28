@@ -50,7 +50,8 @@ static std::string S(const ByteString &bs)
 
 static std::string S(const String &s)
 {
-    return {s.c_str(), s.size()};
+    auto utf8 = s.ToUtf8();
+    return {utf8.c_str(), utf8.size()};
 }
 
 static ByteString BS(const std::string &s)
@@ -613,7 +614,7 @@ static Json::Value ExecCommand(const std::string &method, const Json::Value &par
                 el["name"] = S(sd.elements[i].Name);
                 el["description"] = S(sd.elements[i].Description);
                 // Category
-                el["category"] = S(sd.elements[i].MenuSection);
+                el["category"] = sd.elements[i].MenuSection;
                 arr.append(el);
             }
         }
