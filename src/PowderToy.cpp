@@ -2,6 +2,7 @@
 #include "Format.h"
 #include "X86KillDenormals.h"
 #include "mcp/mcp_server.h"
+#include "gui/game/GameModel.h"
 #include "prefs/GlobalPrefs.h"
 #include "client/Client.h"
 #include "client/GameSave.h"
