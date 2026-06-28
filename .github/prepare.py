@@ -195,6 +195,8 @@ for        arch,     platform,         libc,   statdyn, bplatform,         runso
 ]:
 	if priority < do_priority:
 		continue
+	if platform != 'android':
+		continue
 	job_name = f'build'
 	if starcatcher:
 		job_name += f'+target=starcatcher-{starcatcher}'
