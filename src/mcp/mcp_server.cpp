@@ -332,12 +332,19 @@ static Json::Value BuildToolsList()
 static int GetElementType(const std::string &name)
 {
     auto &sd = SimulationData::CRef();
+    // Try exact match on Identifier (e.g. "DEFAULT_PT_SAND")
     for (int i = 0; i < PT_NUM; i++)
     {
         if (sd.elements[i].Enabled && S(sd.elements[i].Identifier) == name)
             return i;
     }
-    // Try case-insensitive
+    // Try exact match on short Name (e.g. "SAND")
+    for (int i = 0; i < PT_NUM; i++)
+    {
+        if (sd.elements[i].Enabled && S(sd.elements[i].Name) == name)
+            return i;
+    }
+    // Try case-insensitive on all
     std::string upper = name;
     for (auto &c : upper) c = toupper(c);
     for (int i = 0; i < PT_NUM; i++)
@@ -345,6 +352,17 @@ static int GetElementType(const std::string &name)
         if (sd.elements[i].Enabled)
         {
             auto idStr = S(sd.elements[i].Identifier);
+            for (auto &c : idStr) c = toupper(c);
+            if (idStr == upper)
+                return i;
+        }
+    }
+    // Try case-insensitive on short Name
+    for (int i = 0; i < PT_NUM; i++)
+    {
+        if (sd.elements[i].Enabled)
+        {
+            auto idStr = S(sd.elements[i].Name);
             for (auto &c : idStr) c = toupper(c);
             if (idStr == upper)
                 return i;
@@ -677,10 +695,107 @@ static Json::Value ExecCommand(const std::string &method, const Json::Value &par
                 sim->pv[j][i] = press;
         result["ok"] = true;
     }
-    else if (method == "load_save")
+    else if (method == "load_online_save")
     {
-        auto filePath = BS(params["file"].asString());
-        if (Platform::FileExists(filePath))
+        int saveId = params["id"].asInt();
+        if (saveId <= 0)
+        {
+            result["error"] = "Invalid save ID";
+            return result;
+        }
+        gc->OpenSavePreview(saveId, 0, savePreviewInstant);
+        result["ok"] = true;
+        result["id"] = saveId;
+    }
+    else if (method == "save_scene")
+    {
+        // Save current scene as base64-encoded .cps
+        auto includePressure = params.get("includePressure", false).asBool();
+        auto gameSave = sim->Save(includePressure, RectBetween({ 0, 0 }, Vec2{ XRES, YRES }));
+        if (!gameSave)
+        {
+            result["error"] = "Failed to save scene";
+            return result;
+        }
+        auto serialised = gameSave->Serialise();
+        if (serialised.empty())
+        {
+            result["error"] = "Failed to serialise save";
+            return result;
+        }
+        // Base64 encode
+        static const char b64[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        std::string encoded;
+        encoded.reserve(((serialised.size() + 2) / 3) * 4);
+        for (size_t i = 0; i < serialised.size(); i += 3)
+        {
+            int n = std::min<size_t>(3, serialised.size() - i);
+            unsigned int v = 0;
+            for (int j = 0; j < n; j++)
+                v = (v << 8) | (unsigned char)serialised[i + j];
+            v <<= (3 - n) * 8;
+            encoded += b64[(v >> 18) & 0x3F];
+            encoded += b64[(v >> 12) & 0x3F];
+            encoded += n > 1 ? b64[(v >> 6) & 0x3F] : '=';
+            encoded += n > 2 ? b64[v & 0x3F] : '=';
+        }
+        result["data"] = encoded;
+        result["size"] = (int)serialised.size();
+        result["paused"] = gm->GetPaused();
+    }
+    {
+        // Load save from base64-encoded .cps data
+        auto b64data = params["data"].asString();
+        if (b64data.empty())
+        {
+            result["error"] = "No data provided";
+            return result;
+        }
+        // Decode base64
+        std::vector<char> gameSaveData;
+        // Simple base64 decode
+        static const char b64t[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        std::vector<int> rev(256, -1);
+        for (int i = 0; i < 64; i++)
+            rev[(unsigned char)b64t[i]] = i;
+        rev['='] = 0;
+        
+        std::string clean;
+        for (auto c : b64data)
+            if (rev[(unsigned char)c] >= 0 || c == '=')
+                clean += c;
+        
+        for (size_t i = 0; i + 3 < clean.size(); i += 4)
+        {
+            unsigned v = (rev[(unsigned char)clean[i]] << 18)
+                       | (rev[(unsigned char)clean[i+1]] << 12)
+                       | (rev[(unsigned char)clean[i+2]] << 6)
+                       | rev[(unsigned char)clean[i+3]];
+            gameSaveData.push_back((v >> 16) & 0xFF);
+            if (clean[i+2] != '=')
+                gameSaveData.push_back((v >> 8) & 0xFF);
+            if (clean[i+3] != '=')
+                gameSaveData.push_back(v & 0xFF);
+        }
+        
+        if (gameSaveData.empty())
+        {
+            result["error"] = "Failed to decode base64 data";
+            return result;
+        }
+        
+        try {
+            auto newSave = std::make_unique<GameSave>(gameSaveData);
+            auto newFile = std::make_unique<SaveFile>(ByteString("mcp_save"));
+            newFile->SetGameSave(std::move(newSave));
+            gc->LoadSaveFile(std::move(newFile));
+            result["ok"] = true;
+        } catch (std::exception &e) {
+            result["error"] = ByteString("Failed to load save: ").Append(e.what()).c_str();
+        }
+    }
         {
             std::vector<char> gameSaveData;
             if (Platform::ReadFile(gameSaveData, filePath))
