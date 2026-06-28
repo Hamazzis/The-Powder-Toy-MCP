@@ -1,127 +1,223 @@
-The Powder Toy - June 2026
-==========================
+# 🔬 The Powder Toy — MCP (AI-Controlled)
 
-Get the latest version [from the Powder Toy website](https://powdertoy.co.uk/Download.html). We're also on [Steam](https://store.steampowered.com/app/1148350/The_Powder_Toy/).
+> **Форк The Powder Toy с встроенным MCP-сервером для управления игрой через ИИ**
 
-To use online features such as saving, you need to [register an account](https://powdertoy.co.uk/Register.html).
-You can also visit [the official TPT forum](https://powdertoy.co.uk/Discussions/Categories/Index.html).
+[![Build](https://github.com/Hamazzis/The-Powder-Toy-MCP/actions/workflows/build.yaml/badge.svg)](https://github.com/Hamazzis/The-Powder-Toy-MCP/actions/workflows/build.yaml)
 
-Have you ever wanted to blow something up? Or maybe you always dreamt of operating an atomic power plant? Do you have a will to develop your own CPU? The Powder Toy lets you to do all of these, and even more!
+The Powder Toy — это физическая песочница, симулирующая взаимодействие сотен материалов: песок, вода, огонь, металлы, взрывчатка, электроника и многое другое.
 
-The Powder Toy is a free physics sandbox game, which simulates air pressure and velocity, heat, gravity and a countless number of interactions between different substances! The game provides you with various building materials, liquids, gases and electronic components which can be used to construct complex machines, guns, bombs, realistic terrains and almost anything else. You can then mine them and watch cool explosions, add intricate wirings, play with little stickmen or operate your machine. You can browse and play thousands of different saves made by the community or upload your own – we welcome your creations!
+Этот форк добавляет **встроенный MCP-сервер** (Model Context Protocol), который позволяет AI (через Claude, Hermes, Copilot и любые MCP-совместимые агенты) **напрямую управлять игрой**: строить схемы, запускать симуляцию, анализировать результаты и итерировать, пока конструкция не заработает.
 
-There is a Lua API – you can automate your work or even make plugins for the game. The Powder Toy is free and the source code is distributed under the GNU General Public License, so you can modify the game yourself or help with development.
+---
 
-Build instructions
-===========================================================================
+## ✨ Возможности
 
-See the _Powder Toy Development Help_ section [on the main page of the wiki](https://powdertoy.co.uk/Wiki/W/Main_Page.html).
+| Что умеет ИИ | Как это работает |
+|---|---|
+| 🧱 **Строить** | Размещать любые элементы, линии, прямоугольники, стены |
+| 🔬 **Анализировать** | Читать температуру, давление, типы частиц в любой области |
+| 📸 **Видеть** | Делать скриншоты (base64 PNG) и анализировать визуально |
+| ⏱️ **Симулировать** | Запускать симуляцию на N тиков и проверять результат |
+| ↩️ **Откатывать** | Снэпшоты → если не сработало, откат и новая попытка |
+| 📋 **Загружать** | Сохранения `.stm` / `.cps` |
+| 🧪 **Экспериментировать** | Итеративный цикл: построил → проверил → исправил |
 
-Special Thanks
-===========================================================================
+---
 
-* Stanislaw K Skowronek - Designed the original Powder Toy
-* Simon Robertshaw - Wrote the website, current server owner
-* Skresanov Savely
-* Pilihp64
-* Catelite
-* Victoria Hoyle
-* Nathan Cousins
-* jacksonmj
-* Felix Wallin
-* Lieuwe Mosch
-* Anthony Boot
-* Me4502
-* MaksProg
-* jacob1
-* mniip
-* LBPHacker
+## 🚀 Как это работает
 
-Libraries and other assets used
-===========================================================================
+```
+┌──────────────┐    MCP (HTTP/SSE)    ┌────────────────────────┐
+│  ИИ / Агент   │ ◄──────────────────► │  The Powder Toy (APK)  │
+│  (Hermes,     │    localhost:8123    │                        │
+│   Claude,     │                      │  ┌──────────────────┐  │
+│   Copilot)    │                      │  │ MCP Server       │  │
+│              │                      │  │ • HTTP/SSE       │  │
+│              │                      │  │ • JSON-RPC       │  │
+│              │                      │  │ • 17 инструментов│  │
+└──────────────┘                      │  └──────────────────┘  │
+                                      │  ┌──────────────────┐  │
+                                      │  │ Simulation Core  │  │
+                                      │  │ • Частицы        │  │
+                                      │  │ • Физика         │  │
+                                      │  │ • Химия          │  │
+                                      │  └──────────────────┘  │
+                                      └────────────────────────┘
+```
 
-* [bzip2](http://www.bzip.org/)
-* [FFTW](http://fftw.org/)
-* [JsonCpp](https://github.com/open-source-parsers/jsoncpp)
-* [libcurl](https://curl.se/libcurl/)
-* [libpng](http://www.libpng.org/pub/png/libpng.html)
-* [Lua](https://www.lua.org/)
-* [LuaJIT](https://luajit.org/)
-* [Mallangche](https://github.com/JammPark/Mallangche)
-* [mbedtls](https://www.trustedfirmware.org/projects/mbed-tls/)
-* [SDL](https://libsdl.org/)
+Сервер запускается автоматически при старте игры на **порту 8123** (только localhost).
+Поддерживает **два протокола**:
+1. **MCP HTTP** (рекомендуемый) — `POST /mcp` с JSON-RPC 2.0
+2. **Прямой REST API** — `POST /api` для curl / отладки
 
-Instructions
-===========================================================================
+---
 
-Click on the elements with the mouse and draw in the field, like in MS Paint. The rest of the game is learning what happens next.
+## 🛠️ Инструменты (MCP Tools)
 
-Controls
-===========================================================================
+| Инструмент | Описание | Параметры |
+|---|---|---|
+| `create` | Создать элемент в области | `type`, `x`, `y`, `[width]`, `[height]` |
+| `create_line` | Линия элементов | `type`, `x1`, `y1`, `x2`, `y2` |
+| `create_box` | Заливка прямоугольника | `type`, `x1`, `y1`, `x2`, `y2` |
+| `create_wall` | Стены (wall, fan, vacuum, heat...) | `wall_type`, `x`, `y`, `[width]`, `[height]` |
+| `run` | Запустить симуляцию | `[ticks]` (1–10000, по умолч. 100) |
+| `read_state` | Прочитать состояние | `[x]`, `[y]`, `[width]`, `[height]`, `[detailed]` |
+| `screenshot` | Скриншот (base64 PNG) | `[format]` — "base64" или "file" |
+| `snapshot` | Сохранить снэпшот (откат) | — |
+| `restore` | Откатить к последнему снэпшоту | — |
+| `clear` | Очистить симуляцию | — |
+| `pause` | Пауза (get/set) | `[paused]` |
+| `list_elements` | Список всех элементов | — |
+| `get_sim_info` | Полная информация о симуляции | — |
+| `delete` | Стереть частицы | `x`, `y`, `[width]`, `[height]` |
+| `heat` | Задать температуру | `x`, `y`, `temperature`, `[width]`, `[height]` |
+| `pressure` | Задать давление | `x`, `y`, `pressure`, `[width]`, `[height]` |
+| `load_save` | Загрузить файл сохранения | `file` (путь к `.stm`/`.cps`) |
 
-| Key                     | Action                                                          |
-| ----------------------- | --------------------------------------------------------------- |
-| TAB                     | Switch between circle/square/triangle brush                     |
-| Space                   | Pause                                                           |
-| Q / Esc                 | Quit                                                            |
-| Z                       | Zoom                                                            |
-| S                       | Save stamp (use with Ctrl when STK2 is out)                     |
-| L                       | Load last saved stamp                                           |
-| K                       | Stamp library                                                   |
-| 0-9                     | Set view mode                                                   |
-| P / F2                  | Save screenshot as .png                                         |
-| E                       | Bring up element search                                         |
-| F                       | Pause and step to next frame                                    |
-| G                       | Increase grid size                                              |
-| Shift + G               | Decrease grid size                                              |
-| H                       | Show/Hide HUD                                                   |
-| Ctrl + H / F1           | Show intro text                                                 |
-| D / F3                  | Debug mode (use with Ctrl when STK2 is out)                     |
-| I                       | Invert Pressure and Velocity map                                |
-| W                       | Cycle gravity modes (use with Ctrl when STK2 is out)            |
-| Y                       | Cycle air modes                                                 |
-| Ctrl + E                | Cycle edge modes                                                |
-| B                       | Enter decoration editor menu                                    |
-| Ctrl + B                | Toggle decorations on/off                                       |
-| N                       | Toggle Newtonian Gravity on/off                                 |
-| U                       | Toggle ambient heat on/off                                      |
-| Ctrl + I                | Install powder toy, for loading saves/stamps by double clicking |
-| Backtick                | Toggle console                                                  |
-| =                       | Reset pressure and velocity map                                 |
-| Ctrl + =                | Reset Electricity                                               |
-| \[                      | Decrease brush size                                             |
-| \]                      | Increase brush size                                             |
-| Alt + \[                | Decrease brush size by 1                                        |
-| Alt + \]                | Increase brush size by 1                                        |
-| Ctrl + C/V/X            | Copy/Paste/Cut                                                  |
-| Ctrl + Z                | Undo                                                            |
-| Ctrl + Y                | Redo                                                            |
-| Ctrl + Cursor drag      | Rectangle                                                       |
-| Shift + Cursor drag     | Line                                                            |
-| Middle click            | Sample element                                                  |
-| Alt + Left click        | Sample element                                                  |
-| Mouse scroll            | Change brush size                                               |
-| Ctrl + Mouse scroll     | Change vertical brush size                                      |
-| Shift + Mouse scroll    | Change horizontal brush size                                    |
-| Shift + R               | Horizontal mirror for selected area when pasting stamps         |
-| Ctrl + Shift + R        | Vertical mirror for selected area when pasting stamps           |
-| R                       | Rotate selected area counterclockwise when pasting stamps       |
-| F11                     | Toggle fullscreen                                               |
+### Ресурсы (MCP Resources)
 
-Command Line
----------------------------------------------------------------------------
+| URI | Описание |
+|---|---|
+| `game://state` | Полное состояние симуляции (JSON) |
+| `game://screenshot` | Скриншот (base64 PNG blob) |
 
-| Command               | Description                                      | Example                                     |
-| --------------------- | ------------------------------------------------ | --------------------------------------------|
-| `scale:SIZE`          | Change window scale factor                       | `scale:2`                                   |
-| `kiosk`               | Fullscreen mode                                  |                                             |
-| `proxy:SERVER[:PORT]` | Proxy server to use                              | `proxy:wwwcache.lancs.ac.uk:8080`           |
-| `open FILE`           | Opens the file as a stamp or game save           |                                             |
-| `ddir DIRECTORY`      | Directory used for saving stamps and preferences |                                             |
-| `ptsave:SAVEID`       | Open online save, used by ptsave: URLs           | `ptsave:2198`                               |
-| `disable-network`     | Disables internet connections                    |                                             |
-| `disable-bluescreen`  | Disable bluescreen handler                       |                                             |
-| `redirect`            | Redirects output to stdout.txt / stderr.txt      |                                             |
-| `console`             | Redirects output to a new console on Windows     |                                             |
-| `cafile:CAFILE`       | Set certificate bundle path                      | `cafile:/etc/ssl/certs/ca-certificates.crt` |
-| `capath:CAPATH`       | Set certificate directory path                   | `capath:/etc/ssl/certs`                     |
+---
+
+## 📥 Установка
+
+### Предварительно собранные APK
+
+1. Открой [Actions](https://github.com/Hamazzis/The-Powder-Toy-MCP/actions)
+2. Выбери последний успешный билд
+3. В разделе **Artifacts** скачай APK для своей архитектуры
+4. Установи на телефон
+
+### Сборка из исходников
+
+```bash
+# Форкнуть и клонировать
+git clone https://github.com/Hamazzis/The-Powder-Toy-MCP.git
+cd The-Powder-Toy-MCP
+
+# GitHub Actions соберёт автоматически после пуша
+git push
+```
+
+---
+
+## 🔌 Подключение
+
+### Через Hermes (рекомендовано)
+
+```bash
+hermes mcp add the-powder-toy \
+  --url http://127.0.0.1:8123/mcp \
+  --transport http
+```
+
+### Через curl (для отладки)
+
+```bash
+# Проверка здоровья
+curl http://127.0.0.1:8123/health
+
+# Список доступных элементов
+curl -X POST http://127.0.0.1:8123/api \
+  -H "Content-Type: application/json" \
+  -d '{"method":"list_elements"}'
+
+# Насыпать песка
+curl -X POST http://127.0.0.1:8123/api \
+  -H "Content-Type: application/json" \
+  -d '{"method":"create","params":{"type":"SAND","x":150,"y":100,"width":100,"height":50}}'
+
+# Налить воду
+curl -X POST http://127.0.0.1:8123/api \
+  -H "Content-Type: application/json" \
+  -d '{"method":"create","params":{"type":"WATR","x":150,"y":50,"width":100,"height":10}}'
+
+# Запустить симуляцию
+curl -X POST http://127.0.0.1:8123/api \
+  -H "Content-Type: application/json" \
+  -d '{"method":"run","params":{"ticks":500}}'
+
+# Сделать скриншот
+curl -X POST http://127.0.0.1:8123/api \
+  -H "Content-Type: application/json" \
+  -d '{"method":"screenshot"}' | python3 -c "import sys,json; d=json.load(sys.stdin)['result']['data']; open('/tmp/tpt.png','wb').write(__import__('base64').b64decode(d))"
+
+# Прочитать состояние
+curl -X POST http://127.0.0.1:8123/api \
+  -H "Content-Type: application/json" \
+  -d '{"method":"read_state","params":{"x":0,"y":0,"width":300,"height":300}}'
+```
+
+### MCP SSE Transport
+
+```bash
+# SSE (потоковое подключение)
+curl -N http://127.0.0.1:8123/sse
+
+# В другом терминале — отправка команд через SSE-сессию
+curl -X POST http://127.0.0.1:8123/message?sessionId=<ID> \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_sim_info","arguments":{}}}'
+```
+
+---
+
+## 🏗️ Пример рабочего цикла ИИ
+
+```
+1.  clear()                          → очистили сцену
+2.  create_box("METL", 100, 200, 50, 10)   → построили стенку
+3.  create("WATR", 125, 100)         → налили воду
+4.  run(200)                         → симулировали
+5.  screenshot()                     → ИИ увидел что получилось
+6.  read_state(0, 0, 300, 300)       → проверил температуру / давление
+7.  restore()                        → не сработало, откатили
+8.  create("FIRE", 125, 150)         → исправили
+9.  run(500)                         → проверили снова
+10. snapshot()                       → работает, сохранили
+```
+
+---
+
+## 🏗️ Архитектура (для разработчиков)
+
+MCP-сервер написан на C++ и встроен прямо в игровой движок:
+
+- **`src/mcp/mcp_server.h`** — публичное API (Start, Stop, SetGamePointers)
+- **`src/mcp/mcp_server.cpp`** — HTTP + JSON-RPC + MCP SSE сервер
+- **Фоновый поток** — обрабатывает TCP-соединения
+- **Прямой доступ к Simulation** — все команды выполняются на главном потоке игры
+- **Без зависимостей** — только POSIX sockets + jsoncpp (уже есть в TPT)
+
+### Эндпоинты
+
+| Метод | Путь | Описание |
+|---|---|---|
+| `POST` | `/api` | JSON-RPC (direct) |
+| `POST` | `/mcp` | MCP JSON-RPC |
+| `GET` | `/sse` | MCP SSE transport |
+| `POST` | `/message` | MCP message endpoint |
+| `GET` | `/screenshot` | Скриншот (JSON) |
+| `GET` | `/health` | Health check |
+
+---
+
+## 📜 Лицензия
+
+Исходный код распространяется под лицензией **GNU General Public License v2**.
+
+Оригинальный проект: [The Powder Toy](https://github.com/The-Powder-Toy/The-Powder-Toy)
+
+---
+
+## 🤝 Контрибьюция
+
+PR и идеи приветствуются! Что можно улучшить:
+- WebSocket транспорт вместо SSE
+- Потоковый рендеринг видео
+- Ещё больше инструментов для электроники
+- GUI панель управления
