@@ -612,6 +612,47 @@ static Json::Value ExecCommand(const std::string &method, const Json::Value &par
         gc->ClearSim();
         result["ok"] = true;
     }
+    else if (method == "deco_fill")
+    {
+        // Fill with a base element first, then decorate
+        int r = params.get("r", 255).asInt();
+        int g = params.get("g", 255).asInt();
+        int b = params.get("b", 255).asInt();
+        int a = params.get("a", 255).asInt();
+        // Fill visible area with DMND for decoration base
+        sim->CreateBox(-1, 0, 0, XRES-1, YRES-1, PT_DMND, 0);
+        sim->ApplyDecorationBox(0, 0, XRES-1, YRES-1, r, g, b, a, 0);
+        result["ok"] = true;
+    }
+    else if (method == "deco_pixel")
+    {
+        int x = params["x"].asInt();
+        int y = params["y"].asInt();
+        int r = params["r"].asInt();
+        int g = params["g"].asInt();
+        int b = params["b"].asInt();
+        int a = params.get("a", 255).asInt();
+        if (x >= 0 && x < XRES && y >= 0 && y < YRES)
+        {
+            sim->ApplyDecoration(x, y, r, g, b, a, 0);
+            result["ok"] = true;
+        }
+        else
+            result["error"] = "Coordinates out of range";
+    }
+    else if (method == "deco_box")
+    {
+        int x1 = params["x1"].asInt();
+        int y1 = params["y1"].asInt();
+        int x2 = params["x2"].asInt();
+        int y2 = params["y2"].asInt();
+        int r = params["r"].asInt();
+        int g = params["g"].asInt();
+        int b = params["b"].asInt();
+        int a = params.get("a", 255).asInt();
+        sim->ApplyDecorationBox(x1, y1, x2, y2, r, g, b, a, 0);
+        result["ok"] = true;
+    }
     else if (method == "pause")
     {
         if (params.isMember("paused"))
