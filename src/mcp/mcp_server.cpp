@@ -837,22 +837,6 @@ static Json::Value ExecCommand(const std::string &method, const Json::Value &par
             result["error"] = ByteString("Failed to load save: ").Append(e.what()).c_str();
         }
     }
-        {
-            std::vector<char> gameSaveData;
-            if (Platform::ReadFile(gameSaveData, filePath))
-            {
-                auto newFile = std::make_unique<SaveFile>(filePath);
-                auto newSave = std::make_unique<GameSave>(gameSaveData);
-                newFile->SetGameSave(std::move(newSave));
-                gc->LoadSaveFile(std::move(newFile));
-                result["ok"] = true;
-            }
-            else
-                result["error"] = "Failed to read file";
-        }
-        else
-            result["error"] = "File not found: " + params["file"].asString();
-    }
     else
     {
         result["error"] = "Unknown method: " + method;
