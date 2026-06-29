@@ -785,6 +785,7 @@ static Json::Value ExecCommand(const std::string &method, const Json::Value &par
         result["size"] = (int)serialised.size();
         result["paused"] = gm->GetPaused();
     }
+    else if (method == "load_save_data")
     {
         // Load save from base64-encoded .cps data
         auto b64data = params["data"].asString();
