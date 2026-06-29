@@ -1,5 +1,10 @@
 <div align="center">
 
+<p>
+  <strong>🇷🇺 Русский</strong> &nbsp;|&nbsp;
+  <a href="README.en.md"><strong>🇬🇧 English</strong></a>
+</p>
+
 # 🧪 The Powder Toy — MCP
 
 ### _AI-управляемая физическая песочница_
